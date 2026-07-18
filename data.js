@@ -96,23 +96,41 @@ function mergeHists(a,b){
 function getSettings(){try{return JSON.parse(store.get("fuel_settings")||"{}");}catch(e){return{};}}
 function setSettings(s){store.set("fuel_settings",JSON.stringify(s));}
 
+/* ---- repo par défaut (coordonnées publiques, pas des secrets) ---- */
+const DEFAULT_REPO={owner:"Samsamiri",repo:"fuel-",branch:"master",path:"data/history.json"};
+
 /* ---- synchro GitHub (API Contents) ---- */
 const Sync={
-  cfg(){try{return JSON.parse(store.get("fuel_github")||"{}");}catch(e){return{};}},
+  cfg(){let s={};try{s=JSON.parse(store.get("fuel_github")||"{}");}catch(e){}return{...DEFAULT_REPO,...s};},
   setCfg(c){store.set("fuel_github",JSON.stringify(c));},
-  enabled(){const c=this.cfg();return !!(c.token&&c.owner&&c.repo);},
+  canRead(){const c=this.cfg();return !!(c.owner&&c.repo);},
+  canWrite(){return !!this.cfg().token;},
+  enabled(){return this.canWrite();},
   path(){return this.cfg().path||"data/history.json";},
-  branch(){return this.cfg().branch||"main";},
+  branch(){return this.cfg().branch||"master";},
   _b64enc(s){return btoa(unescape(encodeURIComponent(s)));},
   _b64dec(s){return decodeURIComponent(escape(atob(s)));},
   _url(){const c=this.cfg();return`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${this.path()}`;},
+  _raw(){const c=this.cfg();return`https://raw.githubusercontent.com/${c.owner}/${c.repo}/${this.branch()}/${this.path()}?t=`+Date.now();},
   _headers(){return{"Authorization":"Bearer "+this.cfg().token,"Accept":"application/vnd.github+json"};},
-  async pull(){
-    if(!this.enabled())return{ok:false,reason:"non configuré"};
+  /* lecture publique, sans token (repo public) */
+  async pullPublic(){
+    if(!this.canRead())return{ok:false,reason:"repo inconnu"};
     try{
-      const r=await fetch(this._url()+"?ref="+this.branch(),{headers:this._headers()});
+      const r=await fetch(this._raw(),{cache:"no-store"});
+      if(r.status===404)return{ok:true,history:[],empty:true};
+      if(!r.ok)return{ok:false,reason:"HTTP "+r.status};
+      const txt=await r.text();let hist=[];try{hist=JSON.parse(txt);}catch(e){hist=[];}
+      return{ok:true,history:hist,public:true};
+    }catch(e){return{ok:false,reason:"réseau: "+e.message};}
+  },
+  /* lecture authentifiée (fraîche, avec sha pour écrire) */
+  async pull(){
+    if(!this.canWrite())return await this.pullPublic();
+    try{
+      const r=await fetch(this._url()+"?ref="+this.branch()+"&t="+Date.now(),{headers:this._headers(),cache:"no-store"});
       if(r.status===404)return{ok:true,history:[],sha:null,empty:true};
-      if(!r.ok)return{ok:false,reason:"HTTP "+r.status+" (vérifie token/repo)"};
+      if(!r.ok)return{ok:false,reason:"HTTP "+r.status+" (vérifie token/repo/branche)"};
       const j=await r.json();
       const txt=this._b64dec(j.content.replace(/\n/g,""));
       let hist=[];try{hist=JSON.parse(txt);}catch(e){hist=[];}
@@ -120,34 +138,39 @@ const Sync={
     }catch(e){return{ok:false,reason:"réseau: "+e.message};}
   },
   async push(history,sha){
-    if(!this.enabled())return{ok:false,reason:"non configuré"};
+    if(!this.canWrite())return{ok:false,reason:"token manquant sur cet appareil"};
     try{
-      const body={message:"maj historique "+new Date().toISOString().slice(0,10),
-        content:this._b64enc(JSON.stringify(history,null,2)),branch:this.branch()};
+      const body={message:"maj historique "+todayKey(),content:this._b64enc(JSON.stringify(history,null,2)),branch:this.branch()};
       if(sha)body.sha=sha;
       const r=await fetch(this._url(),{method:"PUT",headers:{...this._headers(),"Content-Type":"application/json"},body:JSON.stringify(body)});
       if(!r.ok){const t=await r.text();return{ok:false,reason:"HTTP "+r.status+" "+t.slice(0,120)};}
-      const j=await r.json();
-      return{ok:true,sha:j.content.sha};
+      const j=await r.json();return{ok:true,sha:j.content.sha};
     }catch(e){return{ok:false,reason:"réseau: "+e.message};}
   },
-  /* pull remote, merge with local, write merged back locally, return status */
+  /* charge depuis GitHub (auth si token, sinon public), fusionne, écrit en local */
   async syncIn(){
     const res=await this.pull();
     if(!res.ok)return res;
     const merged=mergeHists(getHist(),res.history||[]);
     setHist(merged);
-    return{ok:true,count:merged.length,sha:res.sha,empty:res.empty};
+    return{ok:true,count:merged.length,sha:res.sha,readonly:!this.canWrite(),empty:res.empty};
   },
-  /* pull latest sha+remote, merge, push merged */
+  /* publie : nécessite le token */
   async syncOut(){
+    if(!this.canWrite())return{ok:false,reason:"lecture seule (pas de token)"};
     const pulled=await this.pull();
     if(!pulled.ok)return pulled;
     const merged=mergeHists(getHist(),pulled.history||[]);
     setHist(merged);
     return await this.push(merged,pulled.sha);
+  },
+  /* détecte la branche par défaut du repo */
+  async detectBranch(){
+    const c=this.cfg();if(!c.token)return null;
+    try{const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`,{headers:this._headers()});
+      if(!r.ok)return null;const j=await r.json();return j.default_branch;}catch(e){return null;}
   }
-};
+}
 
 const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
 const nf=n=>Math.round(n).toLocaleString('fr-FR');

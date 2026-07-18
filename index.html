@@ -211,11 +211,11 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       <div class="section-title" style="margin-top:16px">Synchro GitHub<span class="bar"></span></div>
       <div class="gh-field"><label>Utilisateur GitHub</label><input id="ghOwner" placeholder="Samsamiri" autocomplete="off"></div>
       <div class="gh-field"><label>Nom du repo</label><input id="ghRepo" placeholder="fuel-" autocomplete="off"></div>
-      <div class="gh-field"><label>Branche</label><input id="ghBranch" placeholder="main" autocomplete="off"></div>
+      <div class="gh-field"><label>Branche</label><input id="ghBranch" placeholder="master" autocomplete="off"></div>
       <div class="gh-field"><label>Token (fine-grained PAT)</label><input id="ghToken" type="password" placeholder="github_pat_..." autocomplete="off"></div>
       <button class="gh-btn" id="ghSave">Activer et synchroniser</button>
       <div class="gh-status" id="ghStatus"></div>
-      <div class="gh-help">Le token reste dans ce navigateur, jamais dans le repo. Crée-le sur <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> (fine-grained), accès limité au repo <b>fuel-</b>, permission <b>Contents: Read and write</b>.</div>
+      <div class="gh-help">La <b>lecture</b> de ton historique est automatique sur tous tes appareils (repo public), aucun token nécessaire. Le token ne sert qu'à <b>enregistrer</b> depuis cet appareil. Il reste dans ce navigateur, jamais dans le repo. Crée-le sur <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> (fine-grained), accès au repo <b>fuel-</b>, permission <b>Contents: Read and write</b>.</div>
     </div>
   </div>
 
@@ -313,10 +313,11 @@ async function saveDay(){
   upsertEntry(buildEntry());
   const b=$('saveBtn');b.textContent='Enregistré ✓';b.classList.add('saved');
   setTimeout(()=>{b.textContent='Enregistrer la journée';b.classList.remove('saved');},1600);
-  if(Sync.enabled()){setSync('sync','Synchro...');const res=await Sync.syncOut();res.ok?setSync('live','Synchronisé'):setSync('err','Erreur synchro');}
+  if(Sync.canWrite()){setSync('sync','Publication...');const res=await Sync.syncOut();res.ok?setSync('live','Synchronisé'):setSync('err','Erreur : '+res.reason);}
+  else{setSync('read','Sauvé (ajoute le token pour publier)');}
 }
 
-function setSync(state,txt){const p=$('syncPill');p.classList.remove('live','err');if(state==='live')p.classList.add('live');if(state==='err')p.classList.add('err');$('syncTxt').textContent=txt;}
+function setSync(state,txt){const p=$('syncPill');p.classList.remove('live','err');if(state==='live'||state==='read')p.classList.add('live');if(state==='err')p.classList.add('err');$('syncTxt').textContent=txt;}
 
 /* date */
 $('datePick').value=selectedDate;$('datePick').max=todayKey();
@@ -339,8 +340,9 @@ $('carbBase').addEventListener('change',e=>{carbBase=Math.max(100,Math.min(400,+
 /* github */
 (function loadGh(){const c=Sync.cfg();$('ghOwner').value=c.owner||'';$('ghRepo').value=c.repo||'';$('ghBranch').value=c.branch||'main';$('ghToken').value=c.token||'';})();
 $('ghSave').addEventListener('click',async()=>{
-  Sync.setCfg({owner:$('ghOwner').value.trim(),repo:$('ghRepo').value.trim(),branch:($('ghBranch').value.trim()||'main'),token:$('ghToken').value.trim(),path:'data/history.json'});
-  if(!Sync.enabled()){$('ghStatus').textContent='Remplis utilisateur, repo et token.';return;}
+  Sync.setCfg({owner:$('ghOwner').value.trim()||'Samsamiri',repo:$('ghRepo').value.trim()||'fuel-',branch:($('ghBranch').value.trim()||'master'),token:$('ghToken').value.trim(),path:'data/history.json'});
+  if(!Sync.canWrite()){$('ghStatus').textContent='Colle un token pour pouvoir enregistrer depuis cet appareil.';return;}
+  const db=await Sync.detectBranch();if(db&&db!==Sync.cfg().branch){const c=Sync.cfg();c.branch=db;Sync.setCfg(c);$('ghBranch').value=db;}
   $('ghStatus').textContent='Connexion...';setSync('sync','Synchro...');
   const pull=await Sync.syncIn();
   if(!pull.ok){$('ghStatus').textContent='Échec : '+pull.reason;setSync('err','Erreur');return;}
@@ -353,8 +355,10 @@ $('ghSave').addEventListener('click',async()=>{
 $('weight').value=weight;$('carbBase').value=carbBase;
 initDonut();
 (async function boot(){
-  if(Sync.enabled()){setSync('sync','Synchro...');const res=await Sync.syncIn();res.ok?setSync('live','Synchronisé'):setSync('err','Hors ligne');}
-  else{$('setPanel').classList.remove('open');}
+  setSync('sync','Chargement...');
+  const res=await Sync.syncIn();
+  if(res.ok)setSync(Sync.canWrite()?'live':'read',Sync.canWrite()?'Synchronisé':'Lecture seule');
+  else setSync('err','Local');
   loadDate();
 })();
 </script>

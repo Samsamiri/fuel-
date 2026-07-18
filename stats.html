@@ -191,10 +191,10 @@ document.querySelectorAll('.win button').forEach(b=>b.addEventListener('click',(
 
 /* boot + sync */
 (async function boot(){
-  if(Sync.enabled()){$('syncNote').textContent='Synchronisation GitHub...';
-    const res=await Sync.syncIn();
-    $('syncNote').textContent=res.ok?('Synchronisé · '+(res.count||0)+' journées'):('Hors ligne : '+res.reason);
-  }else{$('syncNote').textContent='Mode local (synchro GitHub non activée dans l\'onglet Journée)';}
+  $('syncNote').textContent='Chargement de l\'historique...';
+  const res=await Sync.syncIn();
+  if(res.ok)$('syncNote').textContent=(Sync.canWrite()?'Synchronisé':'Lecture seule (lu depuis GitHub)')+' · '+(res.count||0)+' journées';
+  else $('syncNote').textContent='Mode local : '+res.reason;
   renderStats();
 })();
 </script>
