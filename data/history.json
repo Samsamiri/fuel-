@@ -1,1 +1,55 @@
-
+[
+  {
+    "date": "2026-07-17",
+    "steps": 2500,
+    "muscu": true,
+    "kcal": 2336,
+    "carbs": 272,
+    "protein": 174,
+    "fat": 61,
+    "fibre": 26,
+    "maintenance": 2500,
+    "deficit": 164,
+    "note": "pas de sardine fatigué",
+    "checked": {
+      "chk_Crales": true,
+      "chk_Lait": true,
+      "chk_Banane": true,
+      "chk_Shakerwheycratine": true,
+      "chk_Floconsdavoine": true,
+      "chk_Wrap": true,
+      "chk_Poulet": true,
+      "chk_Huiledolive": true,
+      "chk_Sardine": true
+    },
+    "adherence": 60,
+    "savedAt": 1784339432143
+  },
+  {
+    "date": "2026-07-18",
+    "steps": 12000,
+    "muscu": false,
+    "kcal": 2524,
+    "carbs": 305,
+    "protein": 183,
+    "fat": 64,
+    "fibre": 32,
+    "maintenance": 2680,
+    "deficit": 156,
+    "note": "pas d'oeufs flemme",
+    "checked": {
+      "chk_Crales": true,
+      "chk_Lait": true,
+      "chk_Shakerwheycratine": true,
+      "chk_Floconsdavoine": true,
+      "chk_Fromageblanc": true,
+      "chk_Pommedeterre": true,
+      "chk_Wrap": true,
+      "chk_Salade": true,
+      "chk_ufs": true,
+      "chk_Huiledolive": true
+    },
+    "adherence": 83,
+    "savedAt": 1784339649732
+  }
+]
