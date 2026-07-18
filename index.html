@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fuel · Sammy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0F1319; --surface:#171C24; --surface-2:#1F2630; --line:#2A323E;
+  --text:#E8EAED; --muted:#8A93A0; --faint:#5A6472;
+  --energy:#FF8A3D; --energy-soft:rgba(255,138,61,.14);
+  --move:#4FD1C5; --move-soft:rgba(79,209,197,.14);
+  --carb:#FF8A3D; --prot:#F2606B; --lip:#F4C430;
+  --ok:#4FD1C5;
+  --r:16px; --r-sm:11px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.5; padding:env(safe-area-inset-top) 0 40px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:480px;margin:0 auto;padding:22px 18px}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:-.01em}
+.num{font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--move);font-weight:600}
+.top h1{font-size:30px;font-weight:700;margin-top:2px}
+.date{text-align:right;font-size:12px;color:var(--muted);line-height:1.35}
+.date .d{color:var(--text);font-weight:600;font-size:13px;text-transform:capitalize}
+
+/* hero readout */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;display:flex;gap:18px;align-items:center;margin-bottom:14px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(120% 100% at 100% 0%,var(--energy-soft),transparent 60%);pointer-events:none}
+.kcal-block{flex:1;position:relative;z-index:1}
+.kcal-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kcal{font-size:52px;font-weight:700;line-height:1;margin:4px 0 2px;letter-spacing:-.02em}
+.kcal-sub{font-size:12px;color:var(--faint)}
+.kcal-sub b{color:var(--move);font-weight:600}
+.donut-wrap{width:104px;height:104px;position:relative;flex-shrink:0;z-index:1}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-center .dc-top{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.donut-center .dc-num{font-size:19px;font-weight:600;font-family:'Space Grotesk';line-height:1.1}
+
+/* controls */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.ctrl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.ctrl-head .lbl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.steps-val{font-family:'Space Grotesk';font-weight:700;font-size:26px;color:var(--move);font-variant-numeric:tabular-nums}
+.steps-val small{font-size:13px;color:var(--faint);font-weight:500;letter-spacing:.02em}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;
+  background:linear-gradient(90deg,var(--move) var(--fill,25%),var(--surface-2) var(--fill,25%));
+  outline:none;margin:4px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:var(--move);border:4px solid var(--bg);box-shadow:0 0 0 1px var(--move),0 4px 10px rgba(0,0,0,.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--move);
+  border:4px solid var(--bg);box-shadow:0 0 0 1px var(--move);cursor:pointer}
+.scale{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:2px;font-family:'Space Grotesk'}
+
+/* muscu toggle */
+.seg{display:flex;background:var(--surface-2);border-radius:var(--r-sm);padding:4px;gap:4px}
+.seg button{flex:1;border:none;background:transparent;color:var(--muted);font-family:'Space Grotesk';
+  font-weight:600;font-size:14px;padding:11px;border-radius:8px;cursor:pointer;transition:.18s;letter-spacing:.02em}
+.seg button.on{background:var(--energy);color:#1A0E04;box-shadow:0 2px 8px rgba(255,138,61,.3)}
+.seg button:not(.on):hover{color:var(--text)}
+
+/* macro bars */
+.macro-row{display:flex;align-items:center;gap:12px;margin:12px 0}
+.macro-row:first-of-type{margin-top:4px}
+.macro-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.macro-name{width:74px;font-size:13px;color:var(--muted);font-weight:500}
+.macro-track{flex:1;height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden}
+.macro-fill{height:100%;border-radius:8px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.macro-g{font-family:'Space Grotesk';font-weight:600;font-size:14px;width:56px;text-align:right;font-variant-numeric:tabular-nums}
+.macro-pct{font-family:'Space Grotesk';font-size:11px;color:var(--faint);width:34px;text-align:right}
+
+/* menu */
+.section-title{font-family:'Space Grotesk';font-weight:600;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--move);margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+.section-title:first-child{margin-top:4px}
+.section-title .bar{height:1px;flex:1;background:var(--line)}
+.item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s}
+.item:last-child{border-bottom:none}
+.item.off{opacity:.32;pointer-events:none}
+.check{width:22px;height:22px;border-radius:7px;border:2px solid var(--faint);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:.15s}
+.check svg{width:13px;height:13px;stroke:#0F1319;stroke-width:3.5;fill:none;opacity:0;transition:.15s}
+.item.done .check{background:var(--ok);border-color:var(--ok)}
+.item.done .check svg{opacity:1}
+.item.done .i-name{color:var(--faint);text-decoration:line-through}
+.i-body{flex:1;min-width:0}
+.i-name{font-size:14.5px;font-weight:500}
+.i-qty{font-family:'Space Grotesk';font-weight:600;color:var(--energy);font-size:14px;font-variant-numeric:tabular-nums}
+.i-qty.dyn{color:var(--energy)}
+.i-macro{font-size:11px;color:var(--faint);margin-top:1px}
+
+/* progress meals */
+.meal-prog{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:12px;color:var(--muted)}
+.meal-prog .mp-track{flex:1;height:6px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.meal-prog .mp-fill{height:100%;background:var(--ok);border-radius:6px;transition:width .3s}
+
+/* save + history */
+.save-btn{width:100%;border:none;background:var(--energy);color:#1A0E04;font-family:'Space Grotesk';
+  font-weight:700;font-size:15px;padding:15px;border-radius:var(--r-sm);cursor:pointer;letter-spacing:.02em;
+  margin-top:4px;transition:.15s}
+.save-btn:active{transform:scale(.985)}
+.save-btn.saved{background:var(--ok);color:#04211E}
+.hist-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.hist-head h3{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hist-stats{font-family:'Space Grotesk';font-size:12px;color:var(--faint)}
+.hist-stats b{color:var(--move)}
+.chart-box{height:150px;margin-top:10px;position:relative}
+.empty{color:var(--faint);font-size:13px;text-align:center;padding:26px 10px}
+.clear-link{background:none;border:none;color:var(--faint);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;margin-top:12px}
+.foot{text-align:center;color:var(--faint);font-size:11px;margin-top:28px;font-family:'Space Grotesk';letter-spacing:.04em}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <div class="eyebrow">Programme recomp</div>
+      <h1>Fuel</h1>
+    </div>
+    <div class="date">
+      <div class="d" id="dateDay">—</div>
+      <div id="dateFull">—</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="kcal-block">
+      <div class="kcal-label">Apport du jour</div>
+      <div class="kcal num" id="kcal">0</div>
+      <div class="kcal-sub">kcal · <b id="dayType">Repos</b></div>
+    </div>
+    <div class="donut-wrap">
+      <canvas id="donut"></canvas>
+      <div class="donut-center">
+        <div class="dc-top">Répart.</div>
+        <div class="dc-num num" id="donutPct">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="card">
+    <div class="ctrl-head">
+      <span class="lbl">Pas aujourd'hui</span>
+      <span class="steps-val num"><span id="stepsTxt">10 000</span> <small>pas</small></span>
+    </div>
+    <input type="range" id="steps" min="0" max="40000" step="500" value="10000">
+    <div class="scale"><span>0</span><span>10k</span><span>20k</span><span>30k</span><span>40k</span></div>
+  </div>
+
+  <!-- MUSCU -->
+  <div class="card">
+    <div class="ctrl-head"><span class="lbl">Type de journée</span></div>
+    <div class="seg">
+      <button id="repos" class="on">Repos</button>
+      <button id="muscu">Muscu</button>
+    </div>
+  </div>
+
+  <!-- MACRO SUMMARY -->
+  <div class="card">
+    <div class="ctrl-head"><span class="lbl">Résumé macros</span></div>
+    <div class="macro-row">
+      <span class="macro-dot" style="background:var(--carb)"></span>
+      <span class="macro-name">Glucides</span>
+      <span class="macro-track"><span class="macro-fill" id="fCarb" style="background:var(--carb)"></span></span>
+      <span class="macro-g num" id="gCarb">0 g</span>
+      <span class="macro-pct num" id="pCarb">0%</span>
+    </div>
+    <div class="macro-row">
+      <span class="macro-dot" style="background:var(--prot)"></span>
+      <span class="macro-name">Protéines</span>
+      <span class="macro-track"><span class="macro-fill" id="fProt" style="background:var(--prot)"></span></span>
+      <span class="macro-g num" id="gProt">0 g</span>
+      <span class="macro-pct num" id="pProt">0%</span>
+    </div>
+    <div class="macro-row">
+      <span class="macro-dot" style="background:var(--lip)"></span>
+      <span class="macro-name">Lipides</span>
+      <span class="macro-track"><span class="macro-fill" id="fLip" style="background:var(--lip)"></span></span>
+      <span class="macro-g num" id="gLip">0 g</span>
+      <span class="macro-pct num" id="pLip">0%</span>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="card">
+    <div class="ctrl-head"><span class="lbl">Menu du jour</span></div>
+    <div id="menu"></div>
+    <div class="meal-prog">
+      <div class="mp-track"><div class="mp-fill" id="mealFill" style="width:0%"></div></div>
+      <span class="num" id="mealCount">0/0</span>
+    </div>
+    <button class="save-btn" id="saveBtn">Enregistrer la journée</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <div class="hist-head">
+      <h3>Historique</h3>
+      <span class="hist-stats" id="histStats"></span>
+    </div>
+    <div class="chart-box"><canvas id="histChart"></canvas></div>
+    <div id="histEmpty" class="empty">Aucune journée enregistrée. Enregistre ta première journée pour lancer le suivi.</div>
+    <div style="text-align:center"><button class="clear-link" id="clearHist" style="display:none">Effacer l'historique</button></div>
+  </div>
+
+  <div class="foot">MIRAI · fuel tracker</div>
+</div>
+
+<script>
+/* ---------- persistence (localStorage + in-memory fallback) ---------- */
+const store=(()=>{
+  let ok=true;
+  try{const k="__t";localStorage.setItem(k,"1");localStorage.removeItem(k);}catch(e){ok=false;}
+  const mem={};
+  return{
+    get:k=>ok?localStorage.getItem(k):(k in mem?mem[k]:null),
+    set:(k,v)=>{ok?localStorage.setItem(k,v):mem[k]=v;},
+    persistent:ok
+  };
+})();
+
+/* ---------- nutrition model ----------
+   Glucides = 215 + 7,5 / 1000 pas + 38 si muscu
+   Flocons montent de 0 (0 pas) a 50g (10k+ pas)
+   Pomme de terre = tampon qui absorbe le reste des glucides
+--------------------------------------- */
+const CARB_BASE=215, CARB_PER_1K=7.5, MUSCU_CARB=38;
+const FLOC_CARB_PER_G=0.66, POT_CARB_PER_G=0.17;
+const PROT_BASE=170, FAT_BASE=60;
+
+function compute(steps,muscu){
+  const bufferCarb=CARB_PER_1K*(steps/1000);
+  const flocG=Math.min(50,50*(steps/10000));
+  const flocCarb=flocG*FLOC_CARB_PER_G;
+  const potCarb=Math.max(0,bufferCarb-flocCarb);
+  const potG=potCarb/POT_CARB_PER_G;
+
+  const carbs=CARB_BASE+bufferCarb+(muscu?MUSCU_CARB:0);
+  const protein=PROT_BASE+flocG*0.13+potG*0.02+(muscu?1.5:0);
+  const fat=FAT_BASE+flocG*0.07+(muscu?0.4:0);
+  const kcal=Math.round(carbs*4+protein*4+fat*9);
+  return{carbs,protein,fat,kcal,flocG:Math.round(flocG/5)*5,potG:Math.round(potG/10)*10};
+}
+
+/* ---------- menu definition ---------- */
+function buildMenu(m,flocG,potG){
+  return[
+    {sec:"Matin",items:[
+      {n:"Céréales",q:"100 g",macro:"~75 g glucides"},
+      {n:"Lait",q:"500 g",macro:"pour la journée"},
+    ]},
+    {sec:"Pré-workout",muscuOnly:true,items:[
+      {n:"Banane",q:"1",macro:"~27 g glucides",muscuOnly:true},
+      {n:"Kiwi + collagène",q:"1 + 10 g",macro:"pré-effort",muscuOnly:true},
+    ]},
+    {sec:m?"Post-workout":"Collation",items:[
+      {n:"Shaker whey + créatine",q:"30 g + 5 g",macro:"~24 g protéines"},
+      {n:"Flocons d'avoine",q:flocG+" g",dyn:true,off:flocG<1,macro:"tampon glucides"},
+      {n:"Fromage blanc",q:"250 g",macro:"~24 g protéines"},
+      {n:"Miel",q:"10-20 g",macro:"post-effort",muscuOnly:true},
+    ]},
+    {sec:"Soir",items:[
+      {n:"Wrap",q:"2 × 61 g",macro:"~58 g glucides"},
+      {n:"Pomme de terre",q:potG+" g",dyn:true,off:potG<1,macro:"tampon glucides"},
+      {n:"Poulet",q:"200 g",macro:"~46 g protéines"},
+      {n:"Œufs",q:"3",macro:"~19 g protéines"},
+      {n:"Sardine",q:"1 boîte",macro:"oméga-3"},
+      {n:"Salade",q:"libre",macro:"tomate/concombre/oignon/mâche"},
+      {n:"Huile d'olive",q:"10 g",macro:"cuisson"},
+    ]},
+  ];
+}
+
+/* ---------- state ---------- */
+let steps=10000, muscu=false, checked={};
+const todayKey=()=>new Date().toISOString().slice(0,10);
+
+/* restore today's draft */
+(function restore(){
+  try{
+    const d=JSON.parse(store.get("fuel_today")||"{}");
+    if(d.date===todayKey()){
+      steps=d.steps??10000; muscu=d.muscu??false; checked=d.checked||{};
+    }
+  }catch(e){}
+})();
+
+/* ---------- DOM ---------- */
+const $=id=>document.getElementById(id);
+const nf=n=>n.toLocaleString('fr-FR');
+
+let donut, histChart;
+
+function initDonut(){
+  donut=new Chart($('donut'),{
+    type:'doughnut',
+    data:{labels:['Glucides','Protéines','Lipides'],
+      datasets:[{data:[1,1,1],backgroundColor:['#FF8A3D','#F2606B','#F4C430'],
+      borderWidth:0,spacing:2}]},
+    options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},
+      animation:{duration:400},responsive:true,maintainAspectRatio:false}
+  });
+}
+
+function render(){
+  const r=compute(steps,muscu);
+  // hero
+  $('kcal').textContent=nf(r.kcal);
+  $('dayType').textContent=muscu?'Muscu':'Repos';
+  // macros %
+  const cCal=r.carbs*4,pCal=r.protein*4,lCal=r.fat*9,tot=cCal+pCal+lCal;
+  const pc=Math.round(cCal/tot*100),pp=Math.round(pCal/tot*100),pl=100-pc-pp;
+  $('gCarb').textContent=Math.round(r.carbs)+' g';
+  $('gProt').textContent=Math.round(r.protein)+' g';
+  $('gLip').textContent=Math.round(r.fat)+' g';
+  $('pCarb').textContent=pc+'%'; $('pProt').textContent=pp+'%'; $('pLip').textContent=pl+'%';
+  const maxG=Math.max(r.carbs,r.protein,r.fat);
+  $('fCarb').style.width=(r.carbs/maxG*100)+'%';
+  $('fProt').style.width=(r.protein/maxG*100)+'%';
+  $('fLip').style.width=(r.fat/maxG*100)+'%';
+  $('donutPct').textContent=pc+'/'+pp+'/'+pl;
+  if(donut){donut.data.datasets[0].data=[cCal,pCal,lCal];donut.update();}
+  // steps
+  $('stepsTxt').textContent=nf(steps);
+  $('steps').style.setProperty('--fill',(steps/40000*100)+'%');
+  // menu
+  renderMenu(r);
+  // save draft
+  saveDraft();
+}
+
+function renderMenu(r){
+  const menu=buildMenu(muscu,r.flocG,r.potG);
+  const el=$('menu'); el.innerHTML='';
+  let total=0,done=0;
+  menu.forEach(sec=>{
+    if(sec.muscuOnly && !muscu) return;
+    const st=document.createElement('div');
+    st.className='section-title';
+    st.innerHTML=sec.sec+'<span class="bar"></span>';
+    el.appendChild(st);
+    sec.items.forEach(it=>{
+      const hidden=(it.muscuOnly && !muscu);
+      if(hidden) return;
+      const off=it.off;
+      const id='chk_'+it.n.replace(/[^a-z]/gi,'');
+      const isDone=!!checked[id];
+      if(!off){total++; if(isDone)done++;}
+      const div=document.createElement('div');
+      div.className='item'+(off?' off':'')+(isDone&&!off?' done':'');
+      div.innerHTML=`
+        <span class="check"><svg viewBox="0 0 24 24"><polyline points="4,12 10,18 20,6"/></svg></span>
+        <div class="i-body">
+          <div class="i-name">${it.n}</div>
+          <div class="i-macro">${it.macro}</div>
+        </div>
+        <span class="i-qty${it.dyn?' dyn':''}">${it.q}</span>`;
+      if(!off){
+        div.addEventListener('click',()=>{
+          checked[id]=!checked[id];
+          render();
+        });
+      }
+      el.appendChild(div);
+    });
+  });
+  const pct=total?Math.round(done/total*100):0;
+  $('mealFill').style.width=pct+'%';
+  $('mealCount').textContent=done+'/'+total;
+}
+
+function saveDraft(){
+  store.set("fuel_today",JSON.stringify({date:todayKey(),steps,muscu,checked}));
+}
+
+/* ---------- history ---------- */
+function getHist(){try{return JSON.parse(store.get("fuel_hist")||"[]");}catch(e){return[];}}
+function setHist(h){store.set("fuel_hist",JSON.stringify(h));}
+
+function saveDay(){
+  const r=compute(steps,muscu);
+  let h=getHist();
+  const entry={date:todayKey(),steps,muscu,kcal:r.kcal,
+    carbs:Math.round(r.carbs),protein:Math.round(r.protein),fat:Math.round(r.fat)};
+  const i=h.findIndex(e=>e.date===entry.date);
+  if(i>=0)h[i]=entry; else h.push(entry);
+  h=h.slice(-30);
+  setHist(h);
+  renderHist();
+  const b=$('saveBtn');
+  b.textContent='Journée enregistrée ✓'; b.classList.add('saved');
+  setTimeout(()=>{b.textContent='Enregistrer la journée';b.classList.remove('saved');},1600);
+}
+
+function renderHist(){
+  const h=getHist();
+  const box=$('histChart'), empty=$('histEmpty'), clr=$('clearHist');
+  if(!h.length){
+    empty.style.display='block'; box.style.display='none'; clr.style.display='none';
+    $('histStats').textContent=''; if(histChart){histChart.destroy();histChart=null;} return;
+  }
+  empty.style.display='none'; box.style.display='block'; clr.style.display='inline';
+  const labels=h.map(e=>{const d=new Date(e.date);return d.getDate()+'/'+(d.getMonth()+1);});
+  const kcals=h.map(e=>e.kcal);
+  const avg=Math.round(kcals.reduce((a,b)=>a+b,0)/kcals.length);
+  const avgSteps=Math.round(h.reduce((a,b)=>a+b.steps,0)/h.length);
+  $('histStats').innerHTML=`moy <b>${nf(avg)}</b> kcal · <b>${nf(avgSteps)}</b> pas`;
+  const cfg={
+    type:'line',
+    data:{labels,datasets:[{data:kcals,borderColor:'#FF8A3D',
+      backgroundColor:'rgba(255,138,61,.12)',fill:true,tension:.35,
+      pointBackgroundColor:h.map(e=>e.muscu?'#4FD1C5':'#FF8A3D'),
+      pointBorderColor:'#0F1319',pointBorderWidth:2,pointRadius:4,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        backgroundColor:'#1F2630',borderColor:'#2A323E',borderWidth:1,padding:10,
+        titleColor:'#E8EAED',bodyColor:'#8A93A0',displayColors:false,
+        callbacks:{title:c=>c[0].label,
+          label:c=>{const e=h[c.dataIndex];
+            return[nf(e.kcal)+' kcal',(e.muscu?'Muscu':'Repos')+' · '+nf(e.steps)+' pas',
+              e.carbs+'g G · '+e.protein+'g P · '+e.fat+'g L'];}}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#5A6472',font:{size:10,family:'Space Grotesk'}}},
+        y:{grid:{color:'#1F2630'},ticks:{color:'#5A6472',font:{size:10,family:'Space Grotesk'}}}}}
+  };
+  if(histChart)histChart.destroy();
+  histChart=new Chart(box,cfg);
+}
+
+/* ---------- date ---------- */
+(function setDate(){
+  const d=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  $('dateDay').textContent=days[d.getDay()];
+  $('dateFull').textContent=d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+})();
+
+/* ---------- events ---------- */
+$('steps').addEventListener('input',e=>{steps=+e.target.value;render();});
+$('repos').addEventListener('click',()=>{muscu=false;$('repos').classList.add('on');$('muscu').classList.remove('on');render();});
+$('muscu').addEventListener('click',()=>{muscu=true;$('muscu').classList.add('on');$('repos').classList.remove('on');render();});
+$('saveBtn').addEventListener('click',saveDay);
+$('clearHist').addEventListener('click',()=>{if(confirm('Effacer tout l\'historique ?')){setHist([]);renderHist();}});
+
+/* ---------- boot ---------- */
+$('steps').value=steps;
+if(muscu){$('muscu').classList.add('on');$('repos').classList.remove('on');}
+initDonut();
+render();
+renderHist();
+</script>
+</body>
+</html>
