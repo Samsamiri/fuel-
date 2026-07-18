@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "date": "2026-07-18",
+    "steps": 18000,
+    "muscu": false,
+    "kcal": 2726,
+    "carbs": 350,
+    "protein": 189,
+    "fat": 64,
+    "fibre": 38,
+    "note": "pas d'oeufs flemme"
+  }
+]
