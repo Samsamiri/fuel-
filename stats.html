@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fuel · Statistiques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0F1319;--surface:#171C24;--surface-2:#1F2630;--line:#2A323E;--text:#E8EAED;--muted:#8A93A0;--faint:#5A6472;
+  --energy:#FF8A3D;--move:#4FD1C5;--carb:#FF8A3D;--prot:#F2606B;--lip:#F4C430;--ok:#4FD1C5;--r:16px;--r-sm:11px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;line-height:1.5;padding:env(safe-area-inset-top) 0 40px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:480px;margin:0 auto;padding:22px 18px}
+h1,h2,h3{font-family:'Space Grotesk';margin:0;letter-spacing:-.01em}
+.num{font-family:'Space Grotesk';font-variant-numeric:tabular-nums}
+.top{margin-bottom:14px}.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--move);font-weight:600}
+.top h1{font-size:30px;font-weight:700;margin-top:2px}
+.nav{display:flex;gap:6px;margin-bottom:18px;background:var(--surface-2);padding:4px;border-radius:var(--r-sm)}
+.nav a{flex:1;text-align:center;text-decoration:none;color:var(--muted);font-family:'Space Grotesk';font-weight:600;font-size:13.5px;padding:9px;border-radius:8px}
+.nav a.on{background:var(--surface);color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.lbl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;display:block;margin-bottom:14px}
+.win{display:flex;gap:4px;background:var(--surface-2);border-radius:9px;padding:4px;margin-bottom:14px}
+.win button{flex:1;border:none;background:transparent;color:var(--muted);font-family:'Space Grotesk';font-weight:600;font-size:13px;padding:8px;border-radius:7px;cursor:pointer}
+.win button.on{background:var(--energy);color:#1A0E04}
+.regime{background:linear-gradient(135deg,rgba(79,209,197,.1),rgba(255,138,61,.06));border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.regime h3{font-size:16px;margin-bottom:6px}.regime p{font-size:13px;color:var(--muted);margin:0}
+.regime .rtag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--move);font-weight:600}
+.big-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface-2);border-radius:var(--r-sm);padding:14px}
+.stat .sv{font-family:'Space Grotesk';font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .sv.pos{color:var(--ok)}.stat .sv.energy{color:var(--energy)}
+.stat .sl{font-size:11px;color:var(--muted);margin-top:3px}
+.stat .ss{font-size:10.5px;color:var(--faint);margin-top:1px}
+.chart-box{height:190px;margin-top:6px;position:relative}
+.legend{display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:11px;color:var(--muted);font-family:'Space Grotesk'}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.empty{color:var(--faint);font-size:13px;text-align:center;padding:26px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+td{color:var(--text)}td.n,th.n{text-align:right;font-family:'Space Grotesk';font-variant-numeric:tabular-nums}
+td.j{color:var(--muted);font-size:12.5px}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.kv:last-child{border-bottom:none}.kv .k{color:var(--muted)}.kv .v{font-family:'Space Grotesk';font-weight:600}
+.mini{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5}
+.foot{text-align:center;color:var(--faint);font-size:11px;margin-top:28px;font-family:'Space Grotesk';letter-spacing:.04em}
+.sync-note{font-size:11px;color:var(--faint);text-align:center;margin-bottom:12px;font-family:'Space Grotesk'}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="eyebrow">Programme recomp</div><h1>Statistiques</h1></div>
+  <div class="nav"><a href="index.html">Journée</a><a href="stats.html" class="on">Statistiques</a></div>
+  <div class="sync-note" id="syncNote">Chargement...</div>
+
+  <div class="regime">
+    <div class="rtag">Régime en cours</div>
+    <h3>Recomposition corporelle</h3>
+    <p>Déficit calorique léger maintenu chaque jour : tu manges un peu sous ta dépense pour perdre du gras, tout en gardant les protéines hautes pour construire du muscle. Le déficit s'ajuste automatiquement selon tes pas et tes séances.</p>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Bilan déficit</span>
+    <div class="win"><button data-w="7">7 jours</button><button data-w="30" class="on">30 jours</button><button data-w="0">Tout</button></div>
+    <div id="statsBody">
+      <div class="big-grid">
+        <div class="stat"><div class="sv energy num" id="sDef">—</div><div class="sl">Déficit moyen / jour</div><div class="ss" id="sDefPct"></div></div>
+        <div class="stat"><div class="sv num" id="sIntake">—</div><div class="sl">Apport moyen</div><div class="ss" id="sMaint"></div></div>
+        <div class="stat"><div class="sv pos num" id="sCum">—</div><div class="sl">Déficit cumulé</div><div class="ss">sur la période</div></div>
+        <div class="stat"><div class="sv pos num" id="sFat">—</div><div class="sl">Gras estimé perdu</div><div class="ss">1 kg ≈ 7700 kcal</div></div>
+        <div class="stat"><div class="sv num" id="sSteps">—</div><div class="sl">Pas moyen / jour</div><div class="ss" id="sDays"></div></div>
+        <div class="stat"><div class="sv num" id="sAdh">—</div><div class="sl">Suivi du menu</div><div class="ss">cases cochées</div></div>
+      </div>
+    </div>
+    <div id="statsEmpty" class="empty" style="display:none">Pas encore de journées enregistrées. Enregistre quelques jours dans l'onglet Journée.</div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Apport vs dépense</span>
+    <div class="chart-box"><canvas id="lineChart"></canvas></div>
+    <div class="legend"><span><i style="background:#FF8A3D"></i>Apport</span><span><i style="background:#4FD1C5"></i>Maintenance</span></div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Déficit quotidien</span>
+    <div class="chart-box"><canvas id="barChart"></canvas></div>
+  </div>
+
+  <!-- BASE DATA -->
+  <div class="card">
+    <span class="lbl">Données de base</span>
+    <div class="kv"><span class="k">Taille</span><span class="v" id="bTaille"></span></div>
+    <div class="kv"><span class="k">Poids</span><span class="v" id="bPoids"></span></div>
+    <div class="kv"><span class="k">Âge</span><span class="v" id="bAge"></span></div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Calories dépensées (minimum)</span>
+    <div id="bDepense"></div>
+    <div class="mini">BMR = métabolisme de base au repos. NEAT = dépense des activités non sportives (marche, gestes quotidiens). EAT = dépense de l'entraînement. TEF = énergie de digestion.</div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Maintenance vs cible recomp</span>
+    <table><thead><tr><th>Journée</th><th class="n">Maintenance</th><th class="n">Cible</th><th class="n">Déficit</th></tr></thead><tbody id="bMaint"></tbody></table>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Répartition réelle du menu</span>
+    <table><thead><tr><th>Journée</th><th class="n">kcal</th><th class="n">G</th><th class="n">P</th><th class="n">L</th></tr></thead><tbody id="bTotal"></tbody></table>
+    <div class="mini">G glucides, P protéines, L lipides (en grammes). Pourcentages : voir programme.</div>
+  </div>
+
+  <div class="card">
+    <span class="lbl">Besoins quotidiens</span>
+    <div class="kv"><span class="k">Protéines</span><span class="v" id="bProt"></span></div>
+    <div class="kv"><span class="k">Lipides</span><span class="v" id="bLip"></span></div>
+    <div class="kv"><span class="k">Glucides</span><span class="v" id="bGluc"></span></div>
+  </div>
+
+  <div class="foot">MIRAI · fuel tracker</div>
+</div>
+
+<script src="data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let win=30,lineChart,barChart;
+
+function windowed(h){if(!win)return h;return h.slice(-win);}
+function entMaint(e){return e.maintenance!=null?e.maintenance:maint(e.steps,e.muscu);}
+function entDef(e){return e.deficit!=null?e.deficit:(entMaint(e)-e.kcal);}
+
+function renderStats(){
+  const all=getHist();const h=windowed(all);
+  if(!h.length){$('statsBody').style.display='none';$('statsEmpty').style.display='block';
+    if(lineChart)lineChart.destroy();if(barChart)barChart.destroy();return;}
+  $('statsBody').style.display='block';$('statsEmpty').style.display='none';
+  const n=h.length;
+  const sum=(f)=>h.reduce((a,e)=>a+f(e),0);
+  const avgIntake=sum(e=>e.kcal)/n, avgMaint=sum(entMaint)/n, avgDef=sum(entDef)/n;
+  const cum=sum(entDef), fat=cum/M.KCAL_PER_KG_FAT;
+  const avgSteps=sum(e=>e.steps)/n, muscuD=h.filter(e=>e.muscu).length, reposD=n-muscuD;
+  const avgAdh=sum(e=>e.adherence||0)/n, defPct=avgDef/avgMaint*100;
+  $('sDef').textContent='-'+nf(avgDef);$('sDefPct').textContent=defPct.toFixed(1).replace('.',',')+'% sous maintenance';
+  $('sIntake').textContent=nf(avgIntake);$('sMaint').textContent='maintenance '+nf(avgMaint);
+  $('sCum').textContent='-'+nf(cum);$('sFat').textContent=(fat>=0?'':'+')+fat.toFixed(2).replace('.',',')+' kg';
+  $('sSteps').textContent=nf(avgSteps);$('sDays').textContent=muscuD+' muscu · '+reposD+' repos';
+  $('sAdh').textContent=Math.round(avgAdh)+'%';
+  renderCharts(h);
+}
+
+function renderCharts(h){
+  const labels=h.map(e=>{const d=new Date(e.date);return d.getDate()+'/'+(d.getMonth()+1);});
+  const intake=h.map(e=>e.kcal), maintA=h.map(entMaint), defs=h.map(entDef);
+  const gopt={grid:{color:'#1F2630'},ticks:{color:'#5A6472',font:{size:10,family:'Space Grotesk'}}};
+  const xopt={grid:{display:false},ticks:{color:'#5A6472',font:{size:10,family:'Space Grotesk'},maxTicksLimit:8}};
+  if(lineChart)lineChart.destroy();
+  lineChart=new Chart($('lineChart'),{type:'line',
+    data:{labels,datasets:[
+      {label:'Apport',data:intake,borderColor:'#FF8A3D',backgroundColor:'rgba(255,138,61,.12)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+      {label:'Maintenance',data:maintA,borderColor:'#4FD1C5',borderDash:[5,4],fill:false,tension:.35,pointRadius:0,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'#1F2630',borderColor:'#2A323E',borderWidth:1,padding:10,titleColor:'#E8EAED',bodyColor:'#8A93A0',
+        callbacks:{afterBody:c=>{const i=c[0].dataIndex;return'Déficit -'+nf(defs[i]);}}}},
+      scales:{x:xopt,y:gopt}}});
+  if(barChart)barChart.destroy();
+  barChart=new Chart($('barChart'),{type:'bar',
+    data:{labels,datasets:[{data:defs,backgroundColor:defs.map(d=>d>=0?'#4FD1C5':'#F2606B'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'#1F2630',borderColor:'#2A323E',borderWidth:1,padding:10,titleColor:'#E8EAED',bodyColor:'#8A93A0',
+        callbacks:{label:c=>'Déficit '+(c.raw>=0?'-':'+')+nf(Math.abs(c.raw))+' kcal'}}},
+      scales:{x:xopt,y:gopt}}});
+}
+
+document.querySelectorAll('.win button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.win button').forEach(x=>x.classList.remove('on'));b.classList.add('on');win=+b.dataset.w;renderStats();}));
+
+/* base data */
+(function base(){
+  const B=BASE_DATA;
+  $('bTaille').textContent=B.profil.taille;$('bPoids').textContent=B.profil.poids+' kg';$('bAge').textContent=B.profil.age+' ans';
+  $('bDepense').innerHTML=B.depense.map(x=>'<div class="kv"><span class="k">'+x.k+'</span><span class="v">'+x.v+'</span></div>').join('');
+  $('bMaint').innerHTML=B.maintenance.map((m,i)=>{const c=B.cibleRecomp[i];return'<tr><td class="j">'+m.jour+'</td><td class="n">'+nf(m.v)+'</td><td class="n">'+nf(c.v)+'</td><td class="n" style="color:var(--ok)">-'+nf(m.v-c.v)+'</td></tr>';}).join('');
+  $('bTotal').innerHTML=B.totalReel.map(t=>'<tr><td class="j">'+t.jour+'</td><td class="n">'+nf(t.kcal)+'</td><td class="n">'+t.g+'</td><td class="n">'+t.p+'</td><td class="n">'+t.l+'</td></tr>').join('');
+  $('bProt').textContent=B.besoins.proteines;$('bLip').textContent=B.besoins.lipides;$('bGluc').textContent=B.besoins.glucides;
+})();
+
+/* boot + sync */
+(async function boot(){
+  if(Sync.enabled()){$('syncNote').textContent='Synchronisation GitHub...';
+    const res=await Sync.syncIn();
+    $('syncNote').textContent=res.ok?('Synchronisé · '+(res.count||0)+' journées'):('Hors ligne : '+res.reason);
+  }else{$('syncNote').textContent='Mode local (synchro GitHub non activée dans l\'onglet Journée)';}
+  renderStats();
+})();
+</script>
+</body>
+</html>
