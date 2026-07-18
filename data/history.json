@@ -1,13 +1,29 @@
 [
   {
     "date": "2026-07-18",
-    "steps": 18000,
+    "steps": 12000,
     "muscu": false,
-    "kcal": 2726,
-    "carbs": 350,
-    "protein": 189,
+    "kcal": 2524,
+    "carbs": 305,
+    "protein": 183,
     "fat": 64,
-    "fibre": 38,
-    "note": "pas d'oeufs flemme"
+    "fibre": 32,
+    "maintenance": 2680,
+    "deficit": 156,
+    "note": "pas d'oeufs flemme",
+    "checked": {
+      "chk_Crales": true,
+      "chk_Lait": true,
+      "chk_Shakerwheycratine": true,
+      "chk_Floconsdavoine": true,
+      "chk_Fromageblanc": true,
+      "chk_Pommedeterre": true,
+      "chk_Wrap": true,
+      "chk_Salade": true,
+      "chk_ufs": true,
+      "chk_Huiledolive": true
+    },
+    "adherence": 83,
+    "savedAt": 1784339396689
   }
 ]
